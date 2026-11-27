@@ -4,11 +4,9 @@ DB_NAME = "monitor.db"
 
 
 def init_db():
-    """Database aur tables create karta hai agar pehle se na bane hon."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
 
-        # Uptime Logs Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS uptime_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +18,6 @@ def init_db():
             )
         """)
 
-        # SSL Logs Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS ssl_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +28,6 @@ def init_db():
             )
         """)
 
-        # Broken Links Logs Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS broken_link_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,11 +39,28 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS seo_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT NOT NULL,
+                title TEXT,
+                title_length INTEGER,
+                has_meta_description BOOLEAN,
+                meta_description_length INTEGER,
+                h1_count INTEGER,
+                images_total INTEGER,
+                images_missing_alt INTEGER,
+                has_robots_txt BOOLEAN,
+                has_sitemap_xml BOOLEAN,
+                error TEXT,
+                checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.commit()
 
 
 def save_uptime_result(result: dict):
-    """Uptime check ka result database mein store karta hai."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -58,7 +71,6 @@ def save_uptime_result(result: dict):
 
 
 def save_ssl_result(result: dict):
-    """SSL check ka result database mein store karta hai."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -69,7 +81,6 @@ def save_ssl_result(result: dict):
 
 
 def save_broken_link_result(item: dict):
-    """Broken link check ka result database mein store karta hai."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -80,5 +91,31 @@ def save_broken_link_result(item: dict):
             item.get("broken_url"),
             item.get("status_code"),
             item.get("error"),
+        ))
+        conn.commit()
+
+
+def save_seo_result(result: dict):
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO seo_logs (
+                url, title, title_length, has_meta_description,
+                meta_description_length, h1_count, images_total,
+                images_missing_alt, has_robots_txt, has_sitemap_xml, error
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            result.get("url"),
+            result.get("title"),
+            result.get("title_length"),
+            result.get("has_meta_description"),
+            result.get("meta_description_length"),
+            result.get("h1_count"),
+            result.get("images_total"),
+            result.get("images_missing_alt"),
+            result.get("has_robots_txt"),
+            result.get("has_sitemap_xml"),
+            result.get("error"),
         ))
         conn.commit()
